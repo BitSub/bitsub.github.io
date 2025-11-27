@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flashcard Study Program</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            background-color: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        
+        .file-input-section {
+            text-align: center;
+            margin: 30px 0;
+        }
+        
+        .file-input-section input[type="file"] {
+            display: none;
+        }
+        
+        .file-input-section label {
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            display: inline-block;
+        }
+        
+        .file-input-section label:hover {
+            background-color: #45a049;
+        }
+        
+        .load-default-section {
+            text-align: center;
+            margin: 10px 0;
+        }
+        
+        .load-default-btn {
+            background-color: #2196F3;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        .load-default-btn:hover {
+            background-color: #0b7dda;
+        }
+        
+        .shuffle-option {
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .shuffle-option label {
+            font-size: 14px;
+            cursor: pointer;
+        }
+        
+        .card-container {
+            display: none;
+        }
+        
+        .progress {
+            text-align: center;
+            font-size: 18px;
+            color: #666;
+            margin-bottom: 20px;
+        }
+        
+        .card {
+            background-color: #fff;
+            border: 3px solid #4CAF50;
+            border-radius: 10px;
+            padding: 40px;
+            min-height: 200px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            margin: 30px 0;
+            text-align: center;
+        }
+        
+        .chapter {
+            font-size: 14px;
+            color: #888;
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+        }
+        
+        .card-content {
+            font-size: 24px;
+            color: #333;
+        }
+        
+        .buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            padding: 15px 25px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            color: white;
+            font-weight: bold;
+            min-width: 160px;
+        }
+        
+        .flip-btn {
+            background-color: #2196F3;
+        }
+        
+        .flip-btn:hover {
+            background-color: #0b7dda;
+        }
+        
+        .recycle-soon-btn {
+            background-color: #FF9800;
+        }
+        
+        .recycle-soon-btn:hover {
+            background-color: #e68900;
+        }
+        
+        .recycle-long-btn {
+            background-color: #FF5722;
+        }
+        
+        .recycle-long-btn:hover {
+            background-color: #e64a19;
+        }
+        
+        .remove-btn {
+            background-color: #4CAF50;
+        }
+        
+        .remove-btn:hover {
+            background-color: #45a049;
+        }
+        
+        .completion-message {
+            display: none;
+            text-align: center;
+            font-size: 28px;
+            color: #4CAF50;
+            margin: 50px 0;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .error-message {
+            color: #f44336;
+            text-align: center;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Flashcard Study Program</h1>
+        
+        <div class="load-default-section">
+            <button class="load-default-btn" id="loadDefaultBtn">Load Default Flashcards</button>
+        </div>
+        
+        <div class="file-input-section">
+            <input type="file" id="csvFile" accept=".txt">
+            <label for="csvFile">Or Upload Different File</label>
+        </div>
+        
+        <div class="shuffle-option">
+            <label>
+                <input type="checkbox" id="shuffleCheck" checked> Shuffle cards on load
+            </label>
+        </div>
+        
+        <div class="error-message" id="errorMessage"></div>
+        
+        <div class="card-container" id="cardContainer">
+            <div class="progress" id="progress"></div>
+            
+            <div class="card" id="card">
+                <div class="chapter" id="chapter"></div>
+                <div class="card-content" id="cardContent"></div>
+            </div>
+            
+            <div class="buttons">
+                <button class="flip-btn" id="flipBtn">Flip [Space]</button>
+                <button class="recycle-soon-btn" id="recycleSoonBtn">Recycle Soon [1]</button>
+                <button class="recycle-long-btn" id="recycleLongBtn">Recycle Long [2]</button>
+                <button class="remove-btn" id="removeBtn">Remove [3]</button>
+            </div>
+        </div>
+        
+        <div class="completion-message" id="completionMessage">
+            <p>🎉 Session Complete! 🎉</p>
+        </div>
+    </div>
+
+    <script>
+        let cards = [];
+        let currentCardIndex = 0;
+        let showingFront = true;
+        
+        // **IMPORTANT**: Change this to match your actual file name on GitHub
+        const DEFAULT_FLASHCARD_FILE = 'flashcards.txt';
+        
+        // Shuffle function
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+        
+        // Load default flashcards from hosted file
+        function loadDefaultFlashcards() {
+            document.getElementById('errorMessage').textContent = '';
+            
+            fetch(DEFAULT_FLASHCARD_FILE)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Could not load flashcard file. Make sure "' + DEFAULT_FLASHCARD_FILE + '" is uploaded to GitHub.');
+                    }
+                    return response.text();
+                })
+                .then(text => {
+                    parseCSV(text);
+                })
+                .catch(error => {
+                    document.getElementById('errorMessage').textContent = error.message;
+                    console.error('Error loading flashcards:', error);
+                });
+        }
+        
+        // Load CSV file from user upload
+        document.getElementById('csvFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            document.getElementById('errorMessage').textContent = '';
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const text = e.target.result;
+                parseCSV(text);
+            };
+            reader.readAsText(file);
+        });
+        
+        // Load default flashcards button
+        document.getElementById('loadDefaultBtn').addEventListener('click', loadDefaultFlashcards);
+        
+        // Parse tab-delimited file (uses only first 3 columns, ignores the rest)
+        function parseCSV(text) {
+            cards = [];
+            const lines = text.split('\n');
+            
+            for (let line of lines) {
+                line = line.trim();
+                if (!line) continue;
+                
+                const parts = line.split('\t');
+                if (parts.length >= 3) {
+                    cards.push({
+                        chapter: parts[0].trim(),
+                        front: parts[1].trim(),
+                        back: parts[2].trim()
+                        // Column 4 and beyond are ignored
+                    });
+                }
+            }
+            
+            if (cards.length === 0) {
+                document.getElementById('errorMessage').textContent = 'No valid cards found in file.';
+                return;
+            }
+            
+            // Shuffle if checkbox is checked
+            if (document.getElementById('shuffleCheck').checked) {
+                cards = shuffleArray(cards);
+            }
+            
+            currentCardIndex = 0;
+            showingFront = true;
+            
+            document.getElementById('cardContainer').style.display = 'block';
+            document.getElementById('completionMessage').style.display = 'none';
+            
+            showCard();
+        }
+        
+        // Show current card
+        function showCard() {
+            if (cards.length === 0) {
+                document.getElementById('cardContainer').style.display = 'none';
+                document.getElementById('completionMessage').style.display = 'block';
+                return;
+            }
+            
+            const card = cards[currentCardIndex];
+            document.getElementById('chapter').textContent = card.chapter;
+            
+            if (showingFront) {
+                document.getElementById('cardContent').textContent = card.front;
+            } else {
+                document.getElementById('cardContent').textContent = card.back;
+            }
+            
+            updateProgress();
+        }
+        
+        // Update progress counter
+        function updateProgress() {
+            document.getElementById('progress').textContent = `${cards.length} cards remaining`;
+        }
+        
+        // Flip card
+        function flipCard() {
+            showingFront = !showingFront;
+            showCard();
+        }
+        
+        // Recycle Soon (next 3-5 cards)
+        function recycleSoon() {
+            const card = cards.splice(currentCardIndex, 1)[0];
+            const insertPosition = Math.min(cards.length, currentCardIndex + Math.floor(Math.random() * 3) + 3);
+            cards.splice(insertPosition, 0, card);
+            
+            if (currentCardIndex >= cards.length) {
+                currentCardIndex = 0;
+            }
+            
+            showingFront = true;
+            showCard();
+        }
+        
+        // Recycle Long (end of deck)
+        function recycleLong() {
+            const card = cards.splice(currentCardIndex, 1)[0];
+            cards.push(card);
+            
+            if (currentCardIndex >= cards.length) {
+                currentCardIndex = 0;
+            }
+            
+            showingFront = true;
+            showCard();
+        }
+        
+        // Remove card
+        function removeCard() {
+            cards.splice(currentCardIndex, 1);
+            
+            if (currentCardIndex >= cards.length) {
+                currentCardIndex = 0;
+            }
+            
+            showingFront = true;
+            showCard();
+        }
+        
+        // Button event listeners
+        document.getElementById('flipBtn').addEventListener('click', flipCard);
+        document.getElementById('recycleSoonBtn').addEventListener('click', recycleSoon);
+        document.getElementById('recycleLongBtn').addEventListener('click', recycleLong);
+        document.getElementById('removeBtn').addEventListener('click', removeCard);
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (cards.length === 0) return;
+            
+            switch(e.key) {
+                case ' ':
+                    e.preventDefault();
+                    flipCard();
+                    break;
+                case '1':
+                    recycleSoon();
+                    break;
+                case '2':
+                    recycleLong();
+                    break;
+                case '3':
+                    removeCard();
+                    break;
+            }
+        });
+    </script>
+</body>
+</html>
