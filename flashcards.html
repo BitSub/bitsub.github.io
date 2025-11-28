@@ -354,8 +354,19 @@
                 if (line === '') continue;
                 
                 const parts = line.split('\t');
-                if (parts.length >= 2) {
+                if (parts.length >= 4) {
+                    // 4-column format: chapter, subsection, front, back
                     cards.push({
+                        chapter: parts[0].trim(),
+                        subsection: parts[1].trim(),
+                        front: parts[2].trim(),
+                        back: parts[3].trim()
+                    });
+                } else if (parts.length >= 2) {
+                    // 2-column format (backward compatibility): front, back
+                    cards.push({
+                        chapter: '',
+                        subsection: '',
                         front: parts[0].trim(),
                         back: parts[1].trim()
                     });
@@ -363,7 +374,7 @@
             }
             
             if (cards.length === 0) {
-                alert('No valid flashcards found in file. Make sure the file is tab-delimited.');
+                alert('No valid flashcards found in file. Make sure the file is tab-delimited with either 2 or 4 columns.');
                 return;
             }
             
@@ -387,7 +398,23 @@
             }
             
             const card = cards[currentCardIndex];
-            document.getElementById('cardContent').textContent = showingFront ? card.front : card.back;
+            let content = '';
+            
+            // Add chapter and subsection headers if they exist
+            if (card.chapter || card.subsection) {
+                content += '<div style="font-size: 16px; color: #666; margin-bottom: 20px; font-weight: bold;">';
+                if (card.chapter) content += card.chapter;
+                if (card.chapter && card.subsection) content += ' • ';
+                if (card.subsection) content += card.subsection;
+                content += '</div>';
+            }
+            
+            // Add the actual card content
+            content += '<div style="font-size: 24px;">';
+            content += showingFront ? card.front : card.back;
+            content += '</div>';
+            
+            document.getElementById('cardContent').innerHTML = content;
             document.getElementById('cardInfo').textContent = `Card ${currentCardIndex + 1} of ${cards.length}`;
         }
         
