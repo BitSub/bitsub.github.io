@@ -349,34 +349,36 @@
             cards = [];
             const lines = data.split('\n');
             
-            for (let line of lines) {
-                line = line.trim();
+            console.log('Total lines:', lines.length);
+            
+            for (let i = 0; i < lines.length; i++) {
+                let line = lines[i].trim();
                 if (line === '') continue;
                 
                 const parts = line.split('\t');
+                console.log(`Line ${i + 1}: Found ${parts.length} columns:`, parts);
+                
                 if (parts.length >= 4) {
                     // 4-column format: chapter, subsection, front, back
-                    cards.push({
+                    const card = {
                         chapter: parts[0].trim(),
                         subsection: parts[1].trim(),
                         front: parts[2].trim(),
                         back: parts[3].trim()
-                    });
-                } else if (parts.length >= 2) {
-                    // 2-column format (backward compatibility): front, back
-                    cards.push({
-                        chapter: '',
-                        subsection: '',
-                        front: parts[0].trim(),
-                        back: parts[1].trim()
-                    });
+                    };
+                    cards.push(card);
+                    console.log('Added card:', card);
+                } else {
+                    console.warn(`Line ${i + 1} has only ${parts.length} columns, skipping. Expected 4 columns.`);
                 }
             }
             
             if (cards.length === 0) {
-                alert('No valid flashcards found in file. Make sure the file is tab-delimited with either 2 or 4 columns.');
+                alert('No valid flashcards found in file.\n\nYour file must be tab-delimited with exactly 4 columns:\nColumn 1: Chapter\nColumn 2: Subsection\nColumn 3: Front of card\nColumn 4: Back of card\n\nCheck the browser console (F12) for details.');
                 return;
             }
+            
+            console.log(`Successfully loaded ${cards.length} flashcards`);
             
             // Shuffle cards
             for (let i = cards.length - 1; i > 0; i--) {
